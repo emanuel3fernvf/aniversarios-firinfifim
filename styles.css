@@ -147,26 +147,37 @@ body.modal-open {
   overflow: visible;
 }
 
-/* Barra dos dias da semana — verde escuro, texto branco (como no print) */
+/* Dias da semana — um “cartão” por coluna, mesmo espaçamento e sombra dos dias */
 .cal-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: clamp(0.35rem, 1.5vw, 0.55rem);
-  margin-bottom: clamp(0.5rem, 2vw, 0.75rem);
-  padding: 0.55rem 0.35rem;
-  background: var(--green-dark);
-  border-radius: 8px;
-  box-shadow: var(--shadow-float);
+  gap: clamp(0.45rem, 2vw, 0.65rem);
+  padding: 2px 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .cal-weekday {
-  padding: 0.35rem 0.2rem;
+  padding: 0.45rem 0.25rem;
   font-size: clamp(0.5625rem, 1.8vw, 0.75rem);
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   text-align: center;
   color: #fff;
+  background: var(--green-dark);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-float);
+  border: 1px solid rgba(26, 77, 46, 0.1);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cal-weekday:hover {
+    box-shadow: var(--shadow-float-hover);
+    transform: translateY(-2px);
+  }
 }
 
 /* Grade com espaço entre os “botões” */
@@ -250,6 +261,14 @@ body.modal-open {
   }
 
   .cal-cell--day:hover .cal-card {
+    transform: none;
+  }
+
+  .cal-weekday {
+    transition: none;
+  }
+
+  .cal-weekday:hover {
     transform: none;
   }
 
