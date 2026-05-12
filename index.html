@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Calendário de aniversários da família Firinfifim" />
+    <title>Aniversários — Família Firinfifim</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="header">
+        <p class="header-kicker">Família Firinfifim</p>
+        <h1 class="header-title">Aniversários</h1>
+        <div class="selectors" role="group" aria-label="Ano e mês do calendário">
+          <label class="field">
+            <span class="field-label">Ano</span>
+            <select id="year" class="select" aria-label="Selecionar ano"></select>
+          </label>
+          <label class="field">
+            <span class="field-label">Mês</span>
+            <select id="month" class="select" aria-label="Selecionar mês"></select>
+          </label>
+        </div>
+      </header>
+
+      <main class="main">
+        <div class="calendar-shell">
+          <div
+            id="cal-weekdays"
+            class="cal-weekdays cal-weekdays--sticky"
+            role="row"
+            aria-label="Colunas dos dias da semana"
+          ></div>
+          <div
+            id="calendar-grid"
+            class="cal-grid calendar"
+            role="grid"
+            aria-label="Calendário mensal com aniversariantes"
+          ></div>
+        </div>
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+        <p id="error" class="error" role="alert" hidden></p>
+      </main>
+    </div>
+
+    <div id="day-modal" class="day-modal" hidden>
+      <div class="day-modal__inner">
+        <button type="button" class="day-modal__backdrop" aria-label="Fechar"></button>
+        <div
+          class="day-modal__panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="day-modal-heading"
+          tabindex="-1"
+        >
+          <button type="button" class="day-modal__close" aria-label="Fechar">&times;</button>
+          <h2 id="day-modal-heading" class="day-modal__heading">Aniversariantes</h2>
+          <p id="day-modal-date" class="day-modal__date"></p>
+          <div id="day-modal-grid" class="day-modal__grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <script src="main.js"></script>
+  </body>
+</html>

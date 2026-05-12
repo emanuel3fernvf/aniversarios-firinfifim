@@ -1,0 +1,560 @@
+/* Calendário no estilo do print de referência: verde escuro, faixa verde clara no dia, nomes em vermelho, dias como cartões flutuantes. */
+:root {
+  --green-dark: #1a4d2e;
+  --green-mid: #2d6a4f;
+  --green-strip: #c8e6c9;
+  --green-strip-border: #a5d6a7;
+  --name-red: #b71c1c;
+  --page-bg: #eceff1;
+  --card-white: #ffffff;
+  --ink: #1b1b1b;
+  --muted: #546e7a;
+  --today-ring: #f9a825;
+  --shadow-float: 0 4px 6px -1px rgba(26, 77, 46, 0.12), 0 10px 20px -4px rgba(26, 77, 46, 0.18);
+  --shadow-float-hover: 0 8px 12px -2px rgba(26, 77, 46, 0.14), 0 16px 28px -6px rgba(26, 77, 46, 0.22);
+  --radius-card: 10px;
+  --radius-bar: 10px 10px 0 0;
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    "Noto Sans", "Liberation Sans", sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  font-family: var(--font);
+  font-size: 1rem;
+  line-height: 1.45;
+  color: var(--ink);
+  background: var(--page-bg);
+}
+
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 2rem);
+}
+
+/* Cabeçalho — título forte em verde como “JULHO 2025” no print */
+.header {
+  text-align: center;
+  margin-bottom: clamp(1.25rem, 4vw, 2rem);
+}
+
+.header-kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--green-mid);
+}
+
+.header-title {
+  margin: 0 0 1.25rem;
+  font-size: clamp(1.35rem, 4.2vw, 1.85rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--green-dark);
+}
+
+.selectors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  min-width: min(160px, 42vw);
+}
+
+.field-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--green-mid);
+  text-align: left;
+}
+
+.select {
+  appearance: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--green-dark);
+  background-color: var(--card-white);
+  border: 2px solid var(--green-strip-border);
+  border-radius: 8px;
+  padding: 0.5rem 2rem 0.5rem 0.65rem;
+  box-shadow: var(--shadow-float);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' stroke='%231a4d2e' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.55rem center;
+  cursor: pointer;
+}
+
+.select:focus {
+  outline: 3px solid rgba(249, 168, 37, 0.55);
+  outline-offset: 1px;
+}
+
+.select:hover {
+  border-color: var(--green-mid);
+}
+
+.main {
+  position: relative;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+.calendar-shell {
+  position: relative;
+}
+
+/* Barra DOM–SAB fixa ao rolar a página */
+.cal-weekdays--sticky {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  margin-bottom: clamp(0.5rem, 2vw, 0.75rem);
+}
+
+/* Área do calendário: sem “caixa” única; grade flutuante */
+.calendar {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+}
+
+/* Barra dos dias da semana — verde escuro, texto branco (como no print) */
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: clamp(0.35rem, 1.5vw, 0.55rem);
+  margin-bottom: clamp(0.5rem, 2vw, 0.75rem);
+  padding: 0.55rem 0.35rem;
+  background: var(--green-dark);
+  border-radius: 8px;
+  box-shadow: var(--shadow-float);
+}
+
+.cal-weekday {
+  padding: 0.35rem 0.2rem;
+  font-size: clamp(0.5625rem, 1.8vw, 0.75rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  color: #fff;
+}
+
+/* Grade com espaço entre os “botões” */
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: clamp(0.45rem, 2vw, 0.65rem);
+  align-items: start;
+}
+
+.cal-cell {
+  min-width: 0;
+}
+
+.cal-cell--day {
+  padding: 2px;
+}
+
+.cal-day-btn {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  border-radius: var(--radius-card);
+}
+
+.cal-day-btn:focus {
+  outline: none;
+}
+
+.cal-day-btn:focus-visible {
+  outline: 3px solid rgba(249, 168, 37, 0.85);
+  outline-offset: 3px;
+}
+
+.cal-day-btn:focus-visible .cal-card {
+  box-shadow: var(--shadow-float), 0 0 0 2px rgba(249, 168, 37, 0.5);
+}
+
+/* Slot vazio mantém alinhamento da grade */
+.cal-cell--empty {
+  min-height: clamp(88px, 18vw, 124px);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Cartão flutuante por dia */
+.cal-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: clamp(88px, 18vw, 124px);
+  background: var(--card-white);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: var(--shadow-float);
+  border: 1px solid rgba(26, 77, 46, 0.1);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cal-cell--day:hover .cal-card {
+    box-shadow: var(--shadow-float-hover);
+    transform: translateY(-2px);
+  }
+}
+
+.cal-card--today {
+  box-shadow: var(--shadow-float), 0 0 0 3px var(--today-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cal-card {
+    transition: none;
+  }
+
+  .cal-cell--day:hover .cal-card {
+    transform: none;
+  }
+
+  * {
+    transition: none !important;
+  }
+}
+
+/* Faixa superior do número — verde claro, número centralizado */
+.cal-daynum-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.25rem;
+  background: linear-gradient(to bottom, var(--green-strip), #b2dfbc);
+  border-bottom: 1px solid var(--green-strip-border);
+  border-radius: var(--radius-bar);
+}
+
+.cal-daynum {
+  font-size: clamp(0.75rem, 2.4vw, 0.9375rem);
+  font-weight: 800;
+  color: var(--green-dark);
+  line-height: 1;
+}
+
+.cal-card--today .cal-daynum {
+  color: var(--green-mid);
+}
+
+/* Corpo branco — nomes em vermelho negrito, centralizados */
+.cal-cell-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.3rem 0.45rem;
+  background: var(--card-white);
+}
+
+.cal-names {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.cal-person {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.cal-avatar {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--green-strip-border);
+  background: #f1f8e9;
+}
+
+.cal-name {
+  font-size: clamp(0.625rem, 2vw, 0.75rem);
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--name-red);
+  text-align: center;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.status {
+  margin: 0.85rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.error {
+  margin: 0.75rem 0 0;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #991b1b;
+  background: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-radius: 8px;
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  .cal-weekday {
+    padding: 0.45rem 0.3rem;
+  }
+
+  .cal-avatar {
+    width: 26px;
+    height: 26px;
+  }
+
+  .cal-name {
+    max-width: 100%;
+  }
+}
+
+@media (min-width: 900px) {
+  .cal-card {
+    min-height: 128px;
+  }
+
+  .cal-cell--empty {
+    min-height: 128px;
+  }
+}
+
+/* ——— Modal do dia ——— */
+.day-modal[hidden] {
+  display: none !important;
+}
+
+.day-modal:not([hidden]) {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: block;
+}
+
+.day-modal__inner {
+  position: relative;
+  min-height: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: clamp(0.75rem, 3vw, 1.5rem);
+  padding-top: clamp(1rem, 4vh, 2rem);
+}
+
+.day-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  cursor: pointer;
+  background: rgba(17, 24, 39, 0.72);
+  backdrop-filter: blur(2px);
+}
+
+.day-modal__panel {
+  position: relative;
+  z-index: 1;
+  width: min(920px, 100%);
+  max-height: min(90vh, 900px);
+  overflow: auto;
+  margin: 0 auto;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  padding-top: 2.75rem;
+  background: var(--card-white);
+  border-radius: 14px;
+  box-shadow: 0 25px 50px -12px rgba(26, 77, 46, 0.35), 0 0 0 1px rgba(26, 77, 46, 0.08);
+}
+
+.day-modal__close {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--green-dark);
+  background: rgba(200, 230, 201, 0.45);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.day-modal__close:hover {
+  background: var(--green-strip);
+}
+
+.day-modal__close:focus-visible {
+  outline: 3px solid rgba(249, 168, 37, 0.85);
+  outline-offset: 2px;
+}
+
+.day-modal__heading {
+  margin: 0 0 0.35rem;
+  padding: 0 2.75rem 0.5rem 0;
+  font-size: clamp(1.1rem, 3.5vw, 1.5rem);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--green-dark);
+  border-bottom: 6px solid var(--green-dark);
+}
+
+.day-modal__date {
+  margin: 1rem 0 1.25rem;
+  font-size: clamp(1rem, 2.8vw, 1.2rem);
+  font-weight: 600;
+  text-align: center;
+  color: var(--green-mid);
+}
+
+.day-modal__empty {
+  margin: 0;
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.day-modal__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: clamp(0.65rem, 2.5vw, 1rem);
+}
+
+@media (min-width: 520px) {
+  .day-modal__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 720px) {
+  .day-modal__grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.day-modal-person {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid rgba(26, 77, 46, 0.12);
+  box-shadow: 0 2px 8px rgba(26, 77, 46, 0.08);
+  background: var(--card-white);
+}
+
+.day-modal-person__namebar {
+  flex-shrink: 0;
+  padding: 0.45rem 0.5rem;
+  font-size: clamp(0.75rem, 2.2vw, 0.875rem);
+  font-weight: 800;
+  text-align: center;
+  color: var(--ink);
+  background: linear-gradient(to bottom, var(--green-strip), #b2dfbc);
+  border-bottom: 1px solid var(--green-strip-border);
+}
+
+.day-modal-person__photo {
+  flex: 1;
+  min-height: 120px;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.day-modal-person__photo--missing {
+  background: repeating-linear-gradient(
+    -45deg,
+    #f5f5f5,
+    #f5f5f5 8px,
+    #ececec 8px,
+    #ececec 16px
+  );
+}
+
+.day-modal-person__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 220px;
+  object-fit: cover;
+}
+
+@media (min-width: 720px) {
+  .day-modal-person__photo {
+    min-height: 140px;
+  }
+
+  .day-modal-person__img {
+    max-height: 260px;
+  }
+}
