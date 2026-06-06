@@ -165,8 +165,147 @@ body.modal-open {
   overflow: hidden;
 }
 
+.calendar-carousel__track .calendar-shell {
+  padding-inline: clamp(1.1rem, 3.5vw, 1.6rem);
+}
+
+/* Carrossel horizontal — deslize para mudar mês/ano */
 .calendar-shell {
   position: relative;
+}
+
+.calendar-carousel {
+  position: relative;
+}
+
+.calendar-carousel__hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: 0 0 0.55rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-align: center;
+  opacity: 0.72;
+  transition: opacity 0.35s ease, max-height 0.35s ease, margin 0.35s ease;
+}
+
+.calendar-carousel__hint-arrows {
+  font-size: 0.8125rem;
+  letter-spacing: 0.12em;
+  color: var(--green-mid);
+  opacity: 0.65;
+}
+
+.calendar-carousel--hint-dismissed .calendar-carousel__hint {
+  max-height: 0;
+  margin: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.calendar-carousel__viewport {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y pinch-zoom;
+  cursor: grab;
+  user-select: none;
+}
+
+.calendar-carousel__viewport--dragging {
+  cursor: grabbing;
+}
+
+.calendar-carousel__track {
+  will-change: transform;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.calendar-carousel__track--no-transition {
+  transition: none;
+}
+
+.calendar-carousel__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  min-height: clamp(12rem, 42vw, 18rem);
+  padding: 2rem 1rem;
+}
+
+.calendar-carousel__loading[hidden] {
+  display: none !important;
+}
+
+.calendar-carousel__spinner {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 3px solid rgba(26, 77, 46, 0.15);
+  border-top-color: var(--green-dark);
+  border-radius: 50%;
+  animation: calendar-carousel-spin 0.75s linear infinite;
+}
+
+.calendar-carousel__loading-label {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--green-mid);
+}
+
+.calendar-carousel--turning .calendar-carousel__arrow {
+  opacity: 0.25;
+}
+
+.calendar-carousel__arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 1.65rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--green-mid);
+  opacity: 0.45;
+  transform: translateY(-50%);
+  pointer-events: none;
+  user-select: none;
+}
+
+.calendar-carousel__arrow--prev {
+  left: 0.15rem;
+}
+
+.calendar-carousel__arrow--next {
+  right: 0.15rem;
+}
+
+@keyframes calendar-carousel-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendar-carousel__track {
+    transition: none;
+  }
+
+  .calendar-carousel__spinner {
+    animation: none;
+    border-top-color: var(--green-mid);
+    opacity: 0.7;
+  }
 }
 
 /* Barra DOM–SAB fixa ao rolar a página */
@@ -932,14 +1071,35 @@ body.modal-open {
   outline-offset: -3px;
 }
 
+.age-toggle__hint {
+  display: block;
+  padding: 0 0.4rem 0.45rem;
+  font-size: clamp(0.625rem, 1.8vw, 0.6875rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: center;
+  color: var(--muted);
+  opacity: 0.85;
+}
+
+.age-toggle--show-date .age-toggle__hint {
+  display: none;
+}
+
 .age-toggle__detail {
+  display: block;
+}
+
+.age-toggle__date {
+  display: none;
+  font-size: clamp(0.65rem, 1.9vw, 0.75rem);
+  letter-spacing: 0.01em;
+}
+
+.age-toggle--show-date .age-toggle__detail {
   display: none;
 }
 
-.age-toggle:focus-within .age-toggle__short {
-  display: none;
-}
-
-.age-toggle:focus-within .age-toggle__detail {
+.age-toggle--show-date .age-toggle__date {
   display: block;
 }

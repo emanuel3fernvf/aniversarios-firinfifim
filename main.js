@@ -3,6 +3,12 @@
  * Aniversários são tratados como recorrentes (mês/dia); o ano do CSV é só a data de nascimento/casamento.
  */
 
+/** Versão do app — manter igual a version.json e index.html (?v=). */
+const APP_VERSION = "1.3.0";
+
+const VERSION_STORAGE_KEY = "firinfifim-app-version";
+const VERSION_RELOAD_KEY = "firinfifim-version-reloading";
+
 const CSV_FILENAME = "lista de aniversáriantes.csv";
 const WEDDINGS_CSV_FILENAME = "lista de casamentos.csv";
 
@@ -27,9 +33,15 @@ const MONTH_LABELS = [
 /** Abreviações como no calendário de referência (DOM, SEG, …). */
 const WEEKDAY_LABELS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SAB"];
 
-/** @typedef {{ name: string, imageBase: string, birthYear: number, birthMonth: number, birthDay: number, marriageId?: number }} Person */
+/** Fração da largura do carrossel para confirmar mudança de mês ao soltar. */
+const CAROUSEL_THRESHOLD = 0.25;
 
-/** @typedef {{ id: number, conjuges: string, weddingYear: number, weddingMonth: number, weddingDay: number, spouses: Person[] }} Wedding */
+/** Duração da transição visual ao virar o mês no carrossel (ms). */
+const CAROUSEL_TURN_MS = 380;
+
+/** @typedef {{ name: string, imageBase: string, birthYear: number, birthMonth: number, birthDay: number, marriageId?: number, deathYear?: number, deathMonth?: number, deathDay?: number }} Person */
+
+/** @typedef {{ id: number, conjuges: string, weddingYear: number, weddingMonth: number, weddingDay: number, spouses: Person[], deathYear?: number, deathMonth?: number, deathDay?: number }} Wedding */
 
 /** @typedef {{ type: "person", data: Person } | { type: "wedding", data: Wedding }} DayEvent */
 
@@ -110,7 +122,7 @@ function wireViewFilter() {
 
 /**
  * @param {string} line
- * @returns {{ name: string, dateRaw: string, marriageId?: number, imageBase: string } | null}
+ * @returns {{ name: string, dateRaw: string, marriageId?: number, imageBase: string, deathDateRaw: string } | null}
  */
 function parseCsvRow(line) {
   const trimmed = line.trim();
@@ -122,8 +134,11 @@ function parseCsvRow(line) {
   let dateRaw;
   let marriageIdRaw;
   let imageBase;
+  let deathDateRaw = "";
 
-  if (parts.length >= 4) {
+  if (parts.length >= 5) {
+    [name, dateRaw, marriageIdRaw, imageBase, deathDateRaw] = parts;
+  } else if (parts.length >= 4) {
     [name, dateRaw, marriageIdRaw, imageBase] = parts;
   } else {
     [name, dateRaw, imageBase] = parts;
@@ -138,12 +153,12 @@ function parseCsvRow(line) {
     marriageId = Number(marriageIdRaw);
   }
 
-  return { name, dateRaw, marriageId, imageBase };
+  return { name, dateRaw, marriageId, imageBase, deathDateRaw };
 }
 
 /**
  * @param {string} line
- * @returns {{ id: number, conjuges: string, dateRaw: string } | null}
+ * @returns {{ id: number, conjuges: string, dateRaw: string, deathDateRaw: string } | null}
  */
 function parseWeddingCsvRow(line) {
   const trimmed = line.trim();
@@ -151,9 +166,12 @@ function parseWeddingCsvRow(line) {
   const parts = trimmed.split(",").map((part) => part.trim());
   if (parts.length < 3) return null;
 
-  const [idRaw, conjuges, dateRaw] = parts;
-  if (!idRaw || !conjuges || !dateRaw || !/^\d+$/.test(idRaw)) return null;
-  return { id: Number(idRaw), conjuges, dateRaw };
+  const idRaw = parts[0];
+  const conjuges = parts[1];
+  const dateRaw = parts[2] ?? "";
+  const deathDateRaw = parts[3] ?? "";
+  if (!idRaw || !conjuges || !/^\d+$/.test(idRaw)) return null;
+  return { id: Number(idRaw), conjuges, dateRaw, deathDateRaw };
 }
 
 /**
@@ -185,6 +203,18 @@ function ingestCsv(text) {
     const d = parseBrazilianDate(row.dateRaw);
     if (!d) continue;
     const key = `${d.month}-${d.day}`;
+
+    /** @type {Partial<Pick<Person, "deathYear" | "deathMonth" | "deathDay">>} */
+    const deathFields = {};
+    if (row.deathDateRaw) {
+      const death = parseBrazilianDate(row.deathDateRaw);
+      if (death) {
+        deathFields.deathYear = death.year;
+        deathFields.deathMonth = death.month;
+        deathFields.deathDay = death.day;
+      }
+    }
+
     const person = {
       name: row.name,
       imageBase: row.imageBase,
@@ -192,6 +222,7 @@ function ingestCsv(text) {
       birthMonth: d.month,
       birthDay: d.day,
       marriageId: row.marriageId,
+      ...deathFields,
     };
     const list = birthdaysByMd.get(key);
     if (list) list.push(person);
@@ -224,8 +255,20 @@ function ingestWeddingsCsv(text) {
   for (let i = 1; i < lines.length; i++) {
     const row = parseWeddingCsvRow(lines[i]);
     if (!row) continue;
+    if (!row.dateRaw) continue;
     const d = parseBrazilianDate(row.dateRaw);
     if (!d) continue;
+
+    /** @type {Partial<Pick<Wedding, "deathYear" | "deathMonth" | "deathDay">>} */
+    const deathFields = {};
+    if (row.deathDateRaw) {
+      const death = parseBrazilianDate(row.deathDateRaw);
+      if (death) {
+        deathFields.deathYear = death.year;
+        deathFields.deathMonth = death.month;
+        deathFields.deathDay = death.day;
+      }
+    }
 
     const spouses = [...(spousesByMarriageId.get(row.id) ?? [])];
     const wedding = {
@@ -235,6 +278,7 @@ function ingestWeddingsCsv(text) {
       weddingMonth: d.month,
       weddingDay: d.day,
       spouses,
+      ...deathFields,
     };
 
     const key = `${d.month}-${d.day}`;
@@ -316,31 +360,130 @@ function computeAgeDetail(day, month, year, refDate) {
 }
 
 /**
+ * @param {number} day
+ * @param {number} month 1–12
+ * @param {number} year
+ */
+function formatDateNumeric(day, month, year) {
+  const dd = String(day).padStart(2, "0");
+  const mm = String(month).padStart(2, "0");
+  return `${dd}/${mm}/${year}`;
+}
+
+/**
+ * @param {Date} a
+ * @param {Date} b
+ */
+function isSameCalendarDay(a, b) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+/**
+ * @param {Person} p
+ * @returns {Date}
+ */
+function referenceDateForPerson(p) {
+  if (p.deathYear != null && p.deathMonth != null && p.deathDay != null) {
+    return new Date(p.deathYear, p.deathMonth - 1, p.deathDay);
+  }
+  return new Date();
+}
+
+/**
+ * @param {Wedding} w
+ * @returns {Date}
+ */
+function referenceDateForWedding(w) {
+  if (w.deathYear != null && w.deathMonth != null && w.deathDay != null) {
+    return new Date(w.deathYear, w.deathMonth - 1, w.deathDay);
+  }
+
+  const spouseDeaths = w.spouses
+    .filter((s) => s.deathYear != null && s.deathMonth != null && s.deathDay != null)
+    .map((s) => new Date(s.deathYear, s.deathMonth - 1, s.deathDay));
+
+  if (spouseDeaths.length > 0) {
+    return new Date(Math.max(...spouseDeaths.map((d) => d.getTime())));
+  }
+
+  return new Date();
+}
+
+/**
+ * @param {number} day
+ * @param {number} month 1–12
+ * @param {number} year
+ * @param {Date} refDate
+ */
+function formatCelebrationDateRange(day, month, year, refDate) {
+  const from = formatDateNumeric(day, month, year);
+  const to = formatDateNumeric(refDate.getDate(), refDate.getMonth() + 1, refDate.getFullYear());
+  return `${from} à ${to}`;
+}
+
+/**
  * @param {number} years
  * @param {number} months
  * @param {number} days
+ * @param {Date} refDate
+ */
+function formatAgeDetailText(years, months, days, refDate) {
+  const yearWord = years === 1 ? "ano" : "anos";
+  const monthWord = months === 1 ? "mês" : "meses";
+  const dayWord = days === 1 ? "dia" : "dias";
+  const detail = `${years} ${yearWord}, ${months} ${monthWord} e ${days} ${dayWord}`;
+
+  if (isSameCalendarDay(refDate, new Date())) {
+    return `Hoje faz ${detail}.`;
+  }
+  return `Fez ${detail}.`;
+}
+
+/**
+ * @param {number} day
+ * @param {number} month 1–12
+ * @param {number} year
+ * @param {number} years
+ * @param {number} months
+ * @param {number} days
+ * @param {Date} refDate
  * @returns {HTMLElement}
  */
-function createAgeToggle(years, months, days) {
+function createAgeToggle(day, month, year, years, months, days, refDate) {
   const wrap = document.createElement("div");
   wrap.className = "age-toggle";
 
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "age-toggle__btn";
-  btn.setAttribute("aria-label", "Ver idade detalhada");
-
-  const short = document.createElement("span");
-  short.className = "age-toggle__short";
-  short.textContent = `${years} ${years === 1 ? "ano" : "anos"}`;
+  btn.setAttribute("aria-label", "Ver datas da comemoração");
 
   const detail = document.createElement("span");
   detail.className = "age-toggle__detail";
-  detail.textContent = `Hoje faz ${years} ${years === 1 ? "ano" : "anos"}, ${months} ${months === 1 ? "mês" : "meses"} e ${days} ${days === 1 ? "dia" : "dias"}.`;
+  detail.textContent = formatAgeDetailText(years, months, days, refDate);
 
-  btn.appendChild(short);
+  const dateSpan = document.createElement("span");
+  dateSpan.className = "age-toggle__date";
+  dateSpan.textContent = formatCelebrationDateRange(day, month, year, refDate);
+
+  const hint = document.createElement("span");
+  hint.className = "age-toggle__hint";
+  hint.textContent = "Toque para ver as datas";
+
   btn.appendChild(detail);
+  btn.appendChild(dateSpan);
   wrap.appendChild(btn);
+  wrap.appendChild(hint);
+
+  btn.addEventListener("click", () => {
+    const showingDate = wrap.classList.toggle("age-toggle--show-date");
+    btn.setAttribute("aria-label", showingDate ? "Ver idade detalhada" : "Ver datas da comemoração");
+  });
+
   return wrap;
 }
 
@@ -662,10 +805,10 @@ function populateMonthSelect(selectEl) {
 
 /**
  * @param {Person} p
- * @param {Date} refDate
  * @returns {HTMLElement}
  */
-function buildModalPersonCard(p, refDate) {
+function buildModalPersonCard(p) {
+  const refDate = referenceDateForPerson(p);
   const article = document.createElement("article");
   article.className = "day-modal-person";
 
@@ -685,7 +828,15 @@ function buildModalPersonCard(p, refDate) {
   photoWrap.appendChild(img);
 
   const age = computeAgeDetail(p.birthDay, p.birthMonth, p.birthYear, refDate);
-  const ageToggle = createAgeToggle(age.years, age.months, age.days);
+  const ageToggle = createAgeToggle(
+    p.birthDay,
+    p.birthMonth,
+    p.birthYear,
+    age.years,
+    age.months,
+    age.days,
+    refDate,
+  );
 
   article.appendChild(nameBar);
   article.appendChild(photoWrap);
@@ -695,10 +846,10 @@ function buildModalPersonCard(p, refDate) {
 
 /**
  * @param {Wedding} w
- * @param {Date} refDate
  * @returns {HTMLElement}
  */
-function buildModalWeddingCard(w, refDate) {
+function buildModalWeddingCard(w) {
+  const refDate = referenceDateForWedding(w);
   const article = document.createElement("article");
   article.className = "day-modal-wedding";
 
@@ -736,7 +887,15 @@ function buildModalWeddingCard(w, refDate) {
   }
 
   const age = computeAgeDetail(w.weddingDay, w.weddingMonth, w.weddingYear, refDate);
-  const ageToggle = createAgeToggle(age.years, age.months, age.days);
+  const ageToggle = createAgeToggle(
+    w.weddingDay,
+    w.weddingMonth,
+    w.weddingYear,
+    age.years,
+    age.months,
+    age.days,
+    refDate,
+  );
 
   article.appendChild(nameBar);
   article.appendChild(photoWrap);
@@ -778,7 +937,6 @@ function openDayModal(year, month, day) {
   if (!modal || !headingEl || !dateEl || !gridEl || !panel) return;
 
   const events = getEventsForDay(month, day, currentViewMode);
-  const refDate = new Date();
 
   headingEl.textContent = modalHeadingForMode(currentViewMode);
   dateEl.textContent = formatDateLong(day, month, year);
@@ -793,9 +951,9 @@ function openDayModal(year, month, day) {
   } else {
     for (const ev of events) {
       if (ev.type === "person") {
-        gridEl.appendChild(buildModalPersonCard(ev.data, refDate));
+        gridEl.appendChild(buildModalPersonCard(ev.data));
       } else {
-        gridEl.appendChild(buildModalWeddingCard(ev.data, refDate));
+        gridEl.appendChild(buildModalWeddingCard(ev.data));
       }
     }
   }
@@ -842,6 +1000,7 @@ function wireDayModal() {
   closeBtn?.addEventListener("click", closeDayModal);
 
   gridHost?.addEventListener("click", (ev) => {
+    if (carouselDidDrag) return;
     const btn = ev.target.closest(".cal-day-btn");
     if (!(btn instanceof HTMLButtonElement)) return;
     const y = Number(btn.dataset.year);
@@ -851,6 +1010,240 @@ function wireDayModal() {
     lastFocusedDayBtn = btn;
     openDayModal(y, m, d);
   });
+}
+
+/**
+ * @param {number} year
+ * @param {number} month 1–12
+ * @returns {boolean}
+ */
+function setYearMonth(year, month) {
+  const yearSel = document.getElementById("year");
+  const monthSel = document.getElementById("month");
+  if (!yearSel || !monthSel) return false;
+
+  const yStr = String(year);
+  if (![...yearSel.options].some((o) => o.value === yStr)) return false;
+
+  yearSel.value = yStr;
+  monthSel.value = String(month);
+  return true;
+}
+
+/** @type {number | null} */
+let carouselTurnTimer = null;
+
+/**
+ * @param {number} delta +1 próximo mês, −1 mês anterior
+ * @param {{ animate?: boolean }} [opts]
+ * @returns {boolean}
+ */
+function changeMonthByDelta(delta, opts = {}) {
+  const yearSel = document.getElementById("year");
+  const monthSel = document.getElementById("month");
+  if (!yearSel || !monthSel) return false;
+
+  let year = Number(yearSel.value);
+  let month = Number(monthSel.value);
+
+  month += delta;
+  while (month > 12) {
+    month -= 12;
+    year += 1;
+  }
+  while (month < 1) {
+    month += 12;
+    year -= 1;
+  }
+
+  if (!setYearMonth(year, month)) return false;
+
+  if (opts.animate) {
+    renderWithMonthTurn();
+  } else {
+    render();
+  }
+  return true;
+}
+
+function renderWithMonthTurn() {
+  const carousel = document.getElementById("calendar-carousel");
+  const loading = document.getElementById("calendar-carousel-loading");
+  const track = document.getElementById("calendar-carousel-track");
+  const viewport = document.getElementById("calendar-carousel-viewport");
+  if (!carousel || !loading || !track || !viewport) {
+    render();
+    return;
+  }
+
+  if (carouselTurnTimer !== null) {
+    window.clearTimeout(carouselTurnTimer);
+    carouselTurnTimer = null;
+  }
+
+  carousel.classList.add("calendar-carousel--turning");
+  viewport.setAttribute("aria-busy", "true");
+  loading.hidden = false;
+  track.hidden = true;
+
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const delay = prefersReducedMotion ? 120 : CAROUSEL_TURN_MS;
+
+  carouselTurnTimer = window.setTimeout(() => {
+    render();
+    carousel.classList.remove("calendar-carousel--turning");
+    viewport.removeAttribute("aria-busy");
+    loading.hidden = true;
+    track.hidden = false;
+    carouselTurnTimer = null;
+  }, delay);
+}
+
+function dismissCarouselHint() {
+  document.getElementById("calendar-carousel")?.classList.add("calendar-carousel--hint-dismissed");
+}
+
+/** @type {boolean} */
+let carouselDidDrag = false;
+
+function wireCalendarCarousel() {
+  const viewport = document.getElementById("calendar-carousel-viewport");
+  const track = document.getElementById("calendar-carousel-track");
+  if (!viewport || !track) return;
+
+  let pointerId = null;
+  let startX = 0;
+  let startY = 0;
+  let currentX = 0;
+  let dragging = false;
+  let axisLocked = false;
+  let isHorizontal = false;
+  let didMoveHorizontally = false;
+
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const setTranslate = (x, animate) => {
+    track.classList.toggle("calendar-carousel__track--no-transition", !animate);
+    track.style.transform = x === 0 ? "" : `translateX(${x}px)`;
+  };
+
+  const resetTrack = () => {
+    dragging = false;
+    axisLocked = false;
+    isHorizontal = false;
+    viewport.classList.remove("calendar-carousel__viewport--dragging");
+    setTranslate(0, !prefersReducedMotion);
+    if (didMoveHorizontally) {
+      carouselDidDrag = true;
+      window.setTimeout(() => {
+        carouselDidDrag = false;
+      }, 0);
+    }
+    didMoveHorizontally = false;
+  };
+
+  const applyDragDelta = (deltaX) => {
+    const width = viewport.clientWidth || 1;
+    const maxDrag = width * 0.45;
+    const resisted = Math.sign(deltaX) * Math.min(Math.abs(deltaX), maxDrag);
+    setTranslate(resisted, false);
+    return resisted;
+  };
+
+  /** @param {number} deltaX deslocamento horizontal acumulado */
+  const commitIfPastThreshold = (deltaX) => {
+    const width = viewport.clientWidth || 1;
+    const threshold = width * CAROUSEL_THRESHOLD;
+
+    if (deltaX <= -threshold) {
+      if (changeMonthByDelta(1, { animate: true })) dismissCarouselHint();
+      return true;
+    }
+    if (deltaX >= threshold) {
+      if (changeMonthByDelta(-1, { animate: true })) dismissCarouselHint();
+      return true;
+    }
+    return false;
+  };
+
+  viewport.addEventListener("pointerdown", (ev) => {
+    if (ev.button !== 0) return;
+    pointerId = ev.pointerId;
+    startX = ev.clientX;
+    startY = ev.clientY;
+    currentX = 0;
+    dragging = true;
+    axisLocked = false;
+    isHorizontal = false;
+    didMoveHorizontally = false;
+    track.classList.add("calendar-carousel__track--no-transition");
+  });
+
+  viewport.addEventListener("pointermove", (ev) => {
+    if (!dragging || ev.pointerId !== pointerId) return;
+
+    const deltaX = ev.clientX - startX;
+    const deltaY = ev.clientY - startY;
+
+    if (!axisLocked) {
+      if (Math.abs(deltaX) < 8 && Math.abs(deltaY) < 8) return;
+      axisLocked = true;
+      isHorizontal = Math.abs(deltaX) >= Math.abs(deltaY);
+      if (!isHorizontal) {
+        dragging = false;
+        resetTrack();
+        return;
+      }
+      if (!viewport.hasPointerCapture(ev.pointerId)) {
+        viewport.setPointerCapture(ev.pointerId);
+      }
+      viewport.classList.add("calendar-carousel__viewport--dragging");
+    }
+
+    if (!isHorizontal) return;
+
+    ev.preventDefault();
+    if (Math.abs(deltaX) > 8) didMoveHorizontally = true;
+    currentX = applyDragDelta(deltaX);
+  });
+
+  const finishPointer = (ev) => {
+    if (!dragging || ev.pointerId !== pointerId) return;
+    if (viewport.hasPointerCapture(ev.pointerId)) {
+      viewport.releasePointerCapture(ev.pointerId);
+    }
+    pointerId = null;
+
+    if (isHorizontal) {
+      commitIfPastThreshold(currentX);
+    }
+    resetTrack();
+  };
+
+  viewport.addEventListener("pointerup", finishPointer);
+  viewport.addEventListener("pointercancel", finishPointer);
+
+  let wheelAccum = 0;
+  let wheelTimer = 0;
+
+  viewport.addEventListener(
+    "wheel",
+    (ev) => {
+      if (Math.abs(ev.deltaX) <= Math.abs(ev.deltaY)) return;
+      ev.preventDefault();
+
+      wheelAccum += ev.deltaX;
+      applyDragDelta(-wheelAccum);
+
+      window.clearTimeout(wheelTimer);
+      wheelTimer = window.setTimeout(() => {
+        commitIfPastThreshold(-wheelAccum);
+        wheelAccum = 0;
+        resetTrack();
+      }, 120);
+    },
+    { passive: false },
+  );
 }
 
 function renderStatus(month, year) {
@@ -886,6 +1279,49 @@ function render() {
   renderStatus(month, year);
 }
 
+async function enforceAppVersion() {
+  /** @type {string} */
+  let remoteVersion = APP_VERSION;
+
+  try {
+    const res = await fetch(`./version.json?_=${Date.now()}`, { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && typeof data.version === "string" && data.version.trim()) {
+        remoteVersion = data.version.trim();
+      }
+    }
+  } catch {
+    /* offline ou version.json ausente */
+  }
+
+  if (remoteVersion === APP_VERSION) {
+    localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion);
+    sessionStorage.removeItem(VERSION_RELOAD_KEY);
+    return;
+  }
+
+  if (sessionStorage.getItem(VERSION_RELOAD_KEY) === remoteVersion) {
+    return;
+  }
+
+  localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion);
+  sessionStorage.setItem(VERSION_RELOAD_KEY, remoteVersion);
+
+  if ("caches" in window) {
+    try {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const url = new URL(window.location.href);
+  url.searchParams.set("_v", remoteVersion);
+  window.location.replace(url.toString());
+}
+
 async function init() {
   fillWeekdayHeader();
   currentViewMode = getViewMode();
@@ -906,6 +1342,7 @@ async function init() {
   };
 
   wireDayModal();
+  wireCalendarCarousel();
 
   const peopleUrl = new URL(CSV_FILENAME, window.location.href).href;
   const weddingsUrl = new URL(WEDDINGS_CSV_FILENAME, window.location.href).href;
@@ -958,4 +1395,10 @@ async function init() {
   }
 }
 
-init();
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    enforceAppVersion();
+  }
+});
+
+enforceAppVersion().then(init);

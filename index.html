@@ -4,8 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Calendário de aniversários da família Firinfifim" />
+    <meta name="app-version" content="1.3.0" />
     <title>Aniversários — Família Firinfifim</title>
-    <link rel="stylesheet" href="styles.css?v=1.0.0" />
+    <script>
+      (function () {
+        var VERSION = "1.3.0";
+        var KEY = "firinfifim-app-version";
+        try {
+          var prev = localStorage.getItem(KEY);
+          if (prev && prev !== VERSION) {
+            localStorage.setItem(KEY, VERSION);
+            var url = new URL(window.location.href);
+            url.searchParams.set("_v", VERSION);
+            window.location.replace(url.toString());
+            return;
+          }
+          localStorage.setItem(KEY, VERSION);
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="stylesheet" href="styles.css?v=1.3.0" />
   </head>
   <body>
     <div class="page">
@@ -30,19 +48,39 @@
       </header>
 
       <main class="main">
-        <div class="calendar-shell">
+        <div id="calendar-carousel" class="calendar-carousel">
+          <p id="calendar-carousel-hint" class="calendar-carousel__hint">
+            <span class="calendar-carousel__hint-arrows" aria-hidden="true">← →</span>
+            Deslize para mudar o mês
+          </p>
           <div
-            id="cal-weekdays"
-            class="cal-weekdays cal-weekdays--sticky"
-            role="row"
-            aria-label="Colunas dos dias da semana"
-          ></div>
-          <div
-            id="calendar-grid"
-            class="cal-grid calendar"
-            role="grid"
-            aria-label="Calendário mensal com aniversariantes"
-          ></div>
+            id="calendar-carousel-viewport"
+            class="calendar-carousel__viewport"
+            aria-label="Calendário — deslize horizontalmente para mudar o mês"
+          >
+            <div id="calendar-carousel-loading" class="calendar-carousel__loading" hidden aria-live="polite">
+              <span class="calendar-carousel__spinner" aria-hidden="true"></span>
+              <span class="calendar-carousel__loading-label">Virando o mês…</span>
+            </div>
+            <span class="calendar-carousel__arrow calendar-carousel__arrow--prev" aria-hidden="true">‹</span>
+            <span class="calendar-carousel__arrow calendar-carousel__arrow--next" aria-hidden="true">›</span>
+            <div id="calendar-carousel-track" class="calendar-carousel__track">
+              <div class="calendar-shell">
+                <div
+                  id="cal-weekdays"
+                  class="cal-weekdays cal-weekdays--sticky"
+                  role="row"
+                  aria-label="Colunas dos dias da semana"
+                ></div>
+                <div
+                  id="calendar-grid"
+                  class="cal-grid calendar"
+                  role="grid"
+                  aria-label="Calendário mensal com aniversariantes"
+                ></div>
+              </div>
+            </div>
+          </div>
         </div>
         <p id="status" class="status" role="status" aria-live="polite"></p>
         <p id="error" class="error" role="alert" hidden></p>
@@ -67,6 +105,6 @@
       </div>
     </div>
 
-    <script src="main.js?v=1.0.0"></script>
+    <script src="main.js?v=1.3.0"></script>
   </body>
 </html>
