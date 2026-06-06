@@ -118,6 +118,45 @@ body {
   border-color: var(--green-mid);
 }
 
+.view-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.view-filter__btn {
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--green-dark);
+  background: var(--card-white);
+  border: 2px solid var(--green-strip-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-float);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.view-filter__btn:hover {
+  border-color: var(--green-mid);
+}
+
+.view-filter__btn:focus-visible {
+  outline: 3px solid rgba(249, 168, 37, 0.85);
+  outline-offset: 2px;
+}
+
+.view-filter__btn--active {
+  color: #fff;
+  background: var(--green-dark);
+  border-color: var(--green-dark);
+}
+
 .main {
   position: relative;
 }
@@ -329,6 +368,29 @@ body.modal-open {
   width: 100%;
 }
 
+.cal-wedding {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.cal-wedding__avatars {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+}
+
+.cal-wedding .cal-avatar {
+  width: 28px;
+  height: 28px;
+}
+
 .cal-avatar {
   flex-shrink: 0;
   width: 22px;
@@ -349,6 +411,63 @@ body.modal-open {
   hyphens: auto;
 }
 
+.cal-name--couple,
+.day-modal-wedding__namebar--couple {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2em 0.15em;
+  word-break: normal;
+  hyphens: none;
+}
+
+.cal-name--couple {
+  font-size: clamp(0.6875rem, 2.4vw, 0.8125rem);
+  line-height: 1.15;
+  text-align: center;
+}
+
+.couple-name {
+  min-width: 0;
+}
+
+.couple-heart {
+  color: #d32f2f;
+  line-height: 0;
+}
+
+.couple-heart__icon {
+  display: block;
+}
+
+.couple-heart--overlay {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  border-radius: 50%;
+  background: var(--card-white);
+  box-shadow: 0 0 0 1px var(--green-strip-border);
+}
+
+.couple-heart--cal {
+  width: 14px;
+  height: 14px;
+  font-size: 9px;
+}
+
+.couple-heart--modal {
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 1rem;
+}
+
 .status {
   margin: 0.85rem 0 0;
   font-size: 0.8125rem;
@@ -367,6 +486,116 @@ body.modal-open {
   text-align: center;
 }
 
+/* Celular — colunas estreitas: mais altura, nomes curtos, sem hifenização agressiva */
+@media (max-width: 639px) {
+  .page {
+    padding: 0.5rem 0.35rem;
+  }
+
+  .header-title {
+    margin-bottom: 0.85rem;
+    font-size: 1.2rem;
+  }
+
+  .view-filter {
+    gap: 0.35rem;
+    width: 100%;
+  }
+
+  .view-filter__btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0.45rem 0.4rem;
+    font-size: 0.6875rem;
+  }
+
+  .field {
+    min-width: min(140px, 38vw);
+  }
+
+  .cal-weekdays,
+  .cal-grid {
+    gap: 0.2rem;
+  }
+
+  .cal-weekday {
+    padding: 0.28rem 0.08rem;
+    font-size: 0.5rem;
+    letter-spacing: 0.02em;
+    border-radius: 6px;
+  }
+
+  .cal-cell--empty,
+  .cal-card {
+    min-height: 4.5rem;
+  }
+
+  .cal-card--busy {
+    min-height: 5.75rem;
+  }
+
+  .cal-card--busy-many {
+    min-height: 7rem;
+  }
+
+  .cal-daynum-bar {
+    padding: 0.22rem 0.12rem;
+  }
+
+  .cal-daynum {
+    font-size: 0.6875rem;
+  }
+
+  .cal-cell-body {
+    padding: 0.2rem 0.12rem 0.28rem;
+    align-items: flex-start;
+  }
+
+  .cal-names {
+    gap: 0.22rem;
+  }
+
+  .cal-person,
+  .cal-wedding {
+    gap: 0.12rem;
+  }
+
+  .cal-avatar {
+    width: 18px;
+    height: 18px;
+  }
+
+  .cal-wedding .cal-avatar {
+    width: 26px;
+    height: 26px;
+  }
+
+  .cal-name:not(.cal-name--couple) {
+    font-size: 0.5625rem;
+    line-height: 1.2;
+    word-break: normal;
+    overflow-wrap: normal;
+    hyphens: none;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    max-width: 100%;
+  }
+
+  .cal-name--couple {
+    font-size: 0.625rem;
+    line-height: 1.15;
+    gap: 0.08em;
+  }
+
+  .cal-wedding .couple-heart--cal {
+    width: 13px;
+    height: 13px;
+    font-size: 8px;
+  }
+}
+
 @media (min-width: 640px) {
   .cal-weekday {
     padding: 0.45rem 0.3rem;
@@ -375,6 +604,17 @@ body.modal-open {
   .cal-avatar {
     width: 26px;
     height: 26px;
+  }
+
+  .cal-wedding .cal-avatar {
+    width: 30px;
+    height: 30px;
+  }
+
+  .cal-wedding .couple-heart--cal {
+    width: 15px;
+    height: 15px;
+    font-size: 10px;
   }
 
   .cal-name {
@@ -576,4 +816,130 @@ body.modal-open {
   .day-modal-person__img {
     max-height: 260px;
   }
+}
+
+.day-modal-wedding {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid rgba(26, 77, 46, 0.12);
+  box-shadow: 0 2px 8px rgba(26, 77, 46, 0.08);
+  background: var(--card-white);
+}
+
+.day-modal-wedding__namebar {
+  flex-shrink: 0;
+  padding: 0.45rem 0.5rem;
+  font-size: clamp(0.75rem, 2.2vw, 0.875rem);
+  font-weight: 800;
+  text-align: center;
+  color: var(--ink);
+  background: linear-gradient(to bottom, var(--green-strip), #b2dfbc);
+  border-bottom: 1px solid var(--green-strip-border);
+}
+
+.day-modal-wedding__photos {
+  display: flex;
+  min-height: 120px;
+  background: #fafafa;
+}
+
+.day-modal-wedding__photos--couple {
+  position: relative;
+}
+
+.day-modal-wedding__photos--missing {
+  background: repeating-linear-gradient(
+    -45deg,
+    #f5f5f5,
+    #f5f5f5 8px,
+    #ececec 8px,
+    #ececec 16px
+  );
+}
+
+.day-modal-wedding__photo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.day-modal-wedding__photo + .day-modal-wedding__photo {
+  border-left: 1px solid rgba(26, 77, 46, 0.1);
+}
+
+.day-modal-wedding__photo--missing {
+  background: repeating-linear-gradient(
+    -45deg,
+    #f5f5f5,
+    #f5f5f5 8px,
+    #ececec 8px,
+    #ececec 16px
+  );
+}
+
+.day-modal-wedding__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 220px;
+  object-fit: cover;
+}
+
+@media (min-width: 720px) {
+  .day-modal-wedding__photos {
+    min-height: 140px;
+  }
+
+  .day-modal-wedding__img {
+    max-height: 260px;
+  }
+}
+
+.age-toggle {
+  flex-shrink: 0;
+  border-top: 1px solid rgba(26, 77, 46, 0.1);
+  background: #f8faf8;
+}
+
+.age-toggle__btn {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0.5rem 0.4rem;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: clamp(0.7rem, 2vw, 0.8125rem);
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--green-mid);
+  cursor: pointer;
+}
+
+.age-toggle__btn:focus {
+  outline: none;
+}
+
+.age-toggle__btn:focus-visible {
+  outline: 3px solid rgba(249, 168, 37, 0.85);
+  outline-offset: -3px;
+}
+
+.age-toggle__detail {
+  display: none;
+}
+
+.age-toggle:focus-within .age-toggle__short {
+  display: none;
+}
+
+.age-toggle:focus-within .age-toggle__detail {
+  display: block;
 }
