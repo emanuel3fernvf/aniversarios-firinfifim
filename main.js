@@ -4,7 +4,7 @@
  */
 
 /** Versão do app — manter igual a version.json e index.html (?v=). */
-const APP_VERSION = "1.3.0";
+const APP_VERSION = "1.3.1";
 
 const VERSION_STORAGE_KEY = "firinfifim-app-version";
 const VERSION_RELOAD_KEY = "firinfifim-version-reloading";
@@ -495,9 +495,9 @@ function imageUrl(imageBase) {
   const safe = String(imageBase).trim().replace(/[^a-zA-Z0-9_.-]/g, "");
   if (!safe) return "";
   if (/\.(jpe?g|png|webp|gif)$/i.test(safe)) {
-    return `./resources/${safe}`;
+    return `./resources/${safe}?v=${encodeURIComponent(APP_VERSION)}`;
   }
-  return `./resources/${safe}.jpg`;
+  return `./resources/${safe}.jpg?v=${encodeURIComponent(APP_VERSION)}`;
 }
 
 /**
